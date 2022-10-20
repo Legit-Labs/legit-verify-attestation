@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"github.com/in-toto/in-toto-golang/in_toto"
 	dsselib "github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -85,12 +86,15 @@ func ExtractTypedPayload[T any](ctx context.Context, keyRef string, attestation 
 		return nil, fmt.Errorf("failed to unmarshal predicate: %v", err)
 	}
 
-	header, ok := any(payload).(in_toto.StatementHeader)
+	_subjects := reflect.Indirect(reflect.ValueOf(payload)).FieldByName("Subject")
+
+	// TODO multiple digests
+	subjects, ok := _subjects.Interface().([]in_toto.Subject)
 	if !ok {
 		return nil, fmt.Errorf("The payload does not contain a statement header: %T", payload)
 	}
 
-	statementDigest := header.Subject[0].Digest["sha256"]
+	statementDigest := subjects[0].Digest["sha256"]
 	if statementDigest != digest {
 		return nil, fmt.Errorf("expected digest %v does not match actual: %v", digest, statementDigest)
 	}
