@@ -96,9 +96,9 @@ func UnverifiedTypedPayload[T any](ctx context.Context, keyRef string, attestati
 	return ExtractTypedPayload[T](ctx, keyRef, attestation, skipVerification)
 }
 
-func VerifyDigests(subject []in_toto.Subject, digests ...string) error {
+func VerifyDigests(subjects []in_toto.Subject, digests ...string) error {
 	checks := len(digests)
-	actual := len(subject)
+	actual := len(subjects)
 
 	if actual < checks {
 		return fmt.Errorf("failed to verify digests: not enough digests (%v < %v)", actual < checks)
@@ -108,7 +108,7 @@ func VerifyDigests(subject []in_toto.Subject, digests ...string) error {
 
 	// create a map to accept unordered list of digests (and avoid n^2 iteration)
 	actualMapped := make(map[string]bool, actual)
-	for _, d := range subject {
+	for _, d := range subjects {
 		sha := d.Digest["sha256"]
 		actualMapped[sha] = true
 	}
