@@ -101,7 +101,7 @@ func VerifyDigests(subjects []in_toto.Subject, digests ...string) error {
 	actual := len(subjects)
 
 	if actual < checks {
-		return fmt.Errorf("failed to verify digests: not enough digests (%v < %v)", actual < checks)
+		return fmt.Errorf("failed to verify digests: not enough digests (%v < %v)", actual, checks)
 	} else if checks < actual {
 		log.Printf("note: you only checked %v out of %v digests", checks, actual)
 	}
@@ -115,7 +115,7 @@ func VerifyDigests(subjects []in_toto.Subject, digests ...string) error {
 
 	for _, d := range digests {
 		if _, ok := actualMapped[d]; !ok {
-			return fmt.Errorf("expected digest %v does not exist in subject: %v", d, actualMapped.Keys())
+			return fmt.Errorf("expected digest %v does not exist in subject: %v", d, actualMapped)
 		}
 	}
 
