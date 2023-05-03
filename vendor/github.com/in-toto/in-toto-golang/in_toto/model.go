@@ -1,6 +1,7 @@
 package in_toto
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509"
@@ -18,6 +19,7 @@ import (
 	"github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 	slsa01 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.1"
 	slsa02 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
+	slsa1 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v1"
 
 	"github.com/secure-systems-lab/go-securesystemslib/cjson"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
@@ -30,7 +32,7 @@ and private keys in PEM format stored as strings.  For public keys the Private
 field may be an empty string.
 */
 type KeyVal struct {
-	Private     string `json:"private"`
+	Private     string `json:"private,omitempty"`
 	Public      string `json:"public"`
 	Certificate string `json:"certificate,omitempty"`
 }
@@ -82,7 +84,7 @@ const (
 	// version.
 	PredicateSPDX = "https://spdx.dev/Document"
 	// PredicateCycloneDX represents a CycloneDX SBOM
-	PredicateCycloneDX = "https://cyclonedx.org/schema"
+	PredicateCycloneDX = "https://cyclonedx.org/bom"
 	// PredicateLinkV1 represents an in-toto 0.9 link.
 	PredicateLinkV1 = "https://in-toto.io/Link/v1"
 )
@@ -414,6 +416,7 @@ func validateLink(link Link) error {
 LinkNameFormat represents a format string used to create the filename for a
 signed Link (wrapped in a Metablock). It consists of the name of the link and
 the first 8 characters of the signing key id. E.g.:
+
 	fmt.Sprintf(LinkNameFormat, "package",
 	"2f89b9272acfc8f4a0a0f094d789fdb0ba798b0fe41f2f5f417c12f0085ff498")
 	// returns "package.2f89b9272.link"
@@ -423,6 +426,7 @@ const PreliminaryLinkNameFormat = ".%s.%.8s.link-unfinished"
 
 /*
 LinkNameFormatShort is for links that are not signed, e.g.:
+
 	fmt.Sprintf(LinkNameFormatShort, "unsigned")
 	// returns "unsigned.link"
 */
@@ -999,6 +1003,12 @@ type ProvenanceStatementSLSA02 struct {
 	Predicate slsa02.ProvenancePredicate `json:"predicate"`
 }
 
+// ProvenanceStatementSLSA1 is the definition for an entire provenance statement with SLSA 1.0 predicate.
+type ProvenanceStatementSLSA1 struct {
+	StatementHeader
+	Predicate slsa1.ProvenancePredicate `json:"predicate"`
+}
+
 // ProvenanceStatement is the definition for an entire provenance statement with SLSA 0.2 predicate.
 // Deprecated: Only version-specific provenance structs will be maintained (ProvenanceStatementSLSA01, ProvenanceStatementSLSA02).
 type ProvenanceStatement struct {
@@ -1057,15 +1067,15 @@ func NewDSSESigner(p ...dsse.SignVerifier) (*DSSESigner, error) {
 	}, nil
 }
 
-func (s *DSSESigner) SignPayload(body []byte) (*dsse.Envelope, error) {
-	return s.signer.SignPayload(PayloadType, body)
+func (s *DSSESigner) SignPayload(ctx context.Context, body []byte) (*dsse.Envelope, error) {
+	return s.signer.SignPayload(ctx, PayloadType, body)
 }
 
-func (s *DSSESigner) Verify(e *dsse.Envelope) error {
+func (s *DSSESigner) Verify(ctx context.Context, e *dsse.Envelope) error {
 	if e.PayloadType != PayloadType {
 		return ErrInvalidPayloadType
 	}
 
-	_, err := s.signer.Verify(e)
+	_, err := s.signer.Verify(ctx, e)
 	return err
 }
